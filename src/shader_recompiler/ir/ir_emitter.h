@@ -44,6 +44,9 @@ public:
     void Discard();
     void Discard(const U1& cond);
 
+    void EmitVertex();
+    void EndPrimitive();
+
     void Barrier();
     void WorkgroupMemoryBarrier();
     void DeviceMemoryBarrier();

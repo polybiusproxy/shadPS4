@@ -14,6 +14,8 @@ OPCODE(Prologue,                                            Void,               
 OPCODE(Epilogue,                                            Void,                                                                                           )
 OPCODE(Discard,                                             Void,                                                                                           )
 OPCODE(DiscardCond,                                         Void,           U1,                                                                             )
+OPCODE(EmitVertex,                                          Void,                                                                                           )
+OPCODE(EndPrimitive,                                        Void,                                                                                           )
 
 // Constant memory operations
 OPCODE(ReadConst,                                           U32,            U32x2,          U32,                                                            )

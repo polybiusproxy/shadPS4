@@ -56,7 +56,7 @@ class GraphicsPipeline {
 public:
     explicit GraphicsPipeline(const Instance& instance, Scheduler& scheduler,
                               const GraphicsPipelineKey& key, vk::PipelineCache pipeline_cache,
-                              std::span<const Shader::Info*, MaxShaderStages> infos,
+                              std::span<Shader::Info*, MaxShaderStages> infos,
                               std::array<vk::ShaderModule, MaxShaderStages> modules);
     ~GraphicsPipeline();
 

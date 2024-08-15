@@ -109,6 +109,31 @@ struct Liverpool {
         }
     };
 
+    struct GeometryProgram { // 0xb220
+        u32 address_lo;
+        BitField<0, 8, u32> address_hi;
+        union {
+            BitField<0, 6, u64> num_vgprs;
+            BitField<6, 4, u64> num_sgprs;
+            BitField<29, 5, u64> num_user_regs;
+        } settings;
+        UserData user_data;
+
+        template <typename T = u8*>
+        const T Address() const {
+            const uintptr_t addr = uintptr_t(address_hi) << 40 | uintptr_t(address_lo) << 8;
+            return reinterpret_cast<const T>(addr);
+        }
+
+        std::span<const u32> Code() const {
+            const u32* code = Address<u32*>();
+            BinaryInfo bininfo;
+            std::memcpy(&bininfo, code + (code[1] + 1) * 2, sizeof(bininfo));
+            const u32 num_dwords = bininfo.length / sizeof(u32);
+            return std::span{code, num_dwords};
+        }
+    };
+
     struct ComputeProgram {
         u32 dispatch_initiator;
         u32 dim_x;
@@ -526,6 +551,43 @@ struct Liverpool {
         u32 NumInstances() const {
             return num_instances == 0 ? 1 : num_instances;
         }
+    };
+
+    enum class GsMode : u32 {
+        GsOff = 0,
+        GsScenarioA = 1,
+        GsScenarioB = 2,
+        GsScenarioG = 3,
+        GsScenarioC = 4,
+        SpriteEn = 5,
+    };
+
+    enum class GsCutMode : u32 {
+        GsCut1024 = 0,
+        GsCut512 = 1,
+        GsCut256 = 2,
+        GsCut128 = 3,
+    };
+
+    union VgtGsMode {
+        u32 raw;
+        BitField<0, 3, GsMode> mode;
+        BitField<4, 2, GsCutMode> cut_mode;
+    };
+
+    enum class GsPrimType : u32 {
+        PointList = 0,
+        LineStrip = 1,
+        TriStrip = 2,
+    };
+
+    union GsOutPrimType {
+        u32 raw;
+        BitField<0, 6, GsPrimType> outprim_type;
+        BitField<8, 6, GsPrimType> outprim_type_1;
+        BitField<16, 6, GsPrimType> outprim_type_2;
+        BitField<22, 6, GsPrimType> outprim_type_3;
+        BitField<31, 1, u32> unique_type_per_stream;
     };
 
     struct Scissor {
@@ -965,7 +1027,11 @@ struct Liverpool {
             PolygonControl polygon_control;
             ViewportControl viewport_control;
             VsOutputControl vs_output_control;
-            INSERT_PADDING_WORDS(0xA29E - 0xA207 - 2);
+            INSERT_PADDING_WORDS(0xA290 - 0xA207 - 1);
+            VgtGsMode gs_mode; // 0x28a40 (0xA290)
+            INSERT_PADDING_WORDS(0xA29B - 0xA290 - 1);
+            GsOutPrimType gs_out_prim_type; // 0x28a6c (0xA29B)
+            INSERT_PADDING_WORDS(0xA29D - 0xA29B - 1);
             u32 index_size;
             u32 max_index_size;
             IndexBufferType index_buffer_type;
@@ -1175,6 +1241,7 @@ static_assert(GFX6_3D_REG_INDEX(color_control) == 0xA202);
 static_assert(GFX6_3D_REG_INDEX(clipper_control) == 0xA204);
 static_assert(GFX6_3D_REG_INDEX(viewport_control) == 0xA206);
 static_assert(GFX6_3D_REG_INDEX(vs_output_control) == 0xA207);
+static_assert(GFX6_3D_REG_INDEX(gs_mode) == 0xA290);
 static_assert(GFX6_3D_REG_INDEX(index_size) == 0xA29D);
 static_assert(GFX6_3D_REG_INDEX(index_buffer_type) == 0xA29F);
 static_assert(GFX6_3D_REG_INDEX(enable_primitive_id) == 0xA2A1);

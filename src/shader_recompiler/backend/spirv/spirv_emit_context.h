@@ -166,6 +166,7 @@ public:
 
     boost::container::small_vector<Id, 16> interfaces;
 
+    Id input_position{};
     Id output_position{};
     Id vertex_index{};
     Id instance_id{};
@@ -178,6 +179,8 @@ public:
     std::array<u32, 8> frag_num_comp{};
     Id clip_distances{};
     Id cull_distances{};
+    Id point_size{};
+    Id primitive_id{};
 
     Id workgroup_id{};
     Id local_invocation_id{};

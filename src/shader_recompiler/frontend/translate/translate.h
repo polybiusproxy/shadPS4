@@ -200,6 +200,7 @@ public:
     void V_READLANE_B32(const GcnInst& inst);
     void V_WRITELANE_B32(const GcnInst& inst);
     void S_BARRIER();
+    void S_SENDMSG(const GcnInst& inst);
 
     // MIMG
     void IMAGE_GET_RESINFO(const GcnInst& inst);

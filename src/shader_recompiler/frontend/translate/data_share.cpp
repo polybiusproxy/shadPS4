@@ -114,6 +114,62 @@ void Translator::S_BARRIER() {
     ir.Barrier();
 }
 
+union SendMsg {
+    enum class Message : u16 {
+        MsgReserved0 = 0,
+        MsgReserved1 = 1,
+
+        MsgGs = 2,
+        MsgGsDone = 3,
+
+        MsgReserved4 = 4,
+        MsgReserved5 = 5,
+        MsgReserved6 = 6,
+        MsgReserved7 = 7,
+        MsgReserved8 = 8,
+        MsgReserved9 = 9,
+        MsgReserved10 = 10,
+        MsgReserved11 = 11,
+        MsgReserved12 = 12,
+        MsgReserved13 = 13,
+        MsgReserved14 = 14,
+        MsgReserved15 = 15,
+    };
+
+    enum class Operand : u16 {
+        OpNop = 0,
+        OpCut = 1,
+        OpEmit = 2,
+        OpEmitCut = 3,
+    };
+
+    s16 raw;
+    BitField<0, 4, Message> message;
+    BitField<4, 2, Operand> operand;
+};
+
+void Translator::S_SENDMSG(const GcnInst& inst) {
+    ASSERT(info.stage == Stage::Geometry);
+    SendMsg arg{inst.control.sopp.simm};
+
+    if (arg.message == SendMsg::Message::MsgGs) {
+        switch (arg.operand) {
+        case SendMsg::Operand::OpNop:
+            break;
+        case SendMsg::Operand::OpCut:
+            ir.EndPrimitive();
+            break;
+        case SendMsg::Operand::OpEmit:
+            ir.EmitVertex();
+            break;
+        case SendMsg::Operand::OpEmitCut:
+            ir.EmitVertex();
+            ir.EndPrimitive();
+            break;
+        }
+    }
+}
+
 void Translator::V_READFIRSTLANE_B32(const GcnInst& inst) {
     ASSERT(info.stage != Stage::Compute);
     SetDst(inst.dst[0], GetSrc(inst.src[0]));

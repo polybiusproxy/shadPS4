@@ -195,6 +195,7 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
                              workgroup_size[1], workgroup_size[2]);
         break;
     }
+    case Stage::Export:
     case Stage::Vertex:
         execution_model = spv::ExecutionModel::Vertex;
         break;
@@ -220,6 +221,44 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
         }
         if (info.stores.Get(IR::Attribute::Depth)) {
             ctx.AddExecutionMode(main, spv::ExecutionMode::DepthReplacing);
+        }
+        break;
+    case Stage::Geometry:
+        execution_model = spv::ExecutionModel::Geometry;
+        ctx.AddCapability(spv::Capability::Geometry);
+
+        ctx.AddExecutionMode(main, spv::ExecutionMode::Triangles);
+        ctx.AddExecutionMode(main, spv::ExecutionMode::Invocations, 1);
+
+        switch (info.gs_out_prim_type) {
+        case AmdGpu::Liverpool::GsPrimType::PointList:
+            ctx.AddExecutionMode(main, spv::ExecutionMode::OutputPoints);
+            break;
+        case AmdGpu::Liverpool::GsPrimType::LineStrip:
+            ctx.AddExecutionMode(main, spv::ExecutionMode::OutputLineStrip);
+            break;
+        case AmdGpu::Liverpool::GsPrimType::TriStrip:
+            ctx.AddExecutionMode(main, spv::ExecutionMode::OutputTriangleStrip);
+            break;
+        default:
+            UNREACHABLE_MSG("Unexpected GS primitive type");
+        }
+
+        switch (info.gs_cut_mode) {
+        case AmdGpu::Liverpool::GsCutMode::GsCut1024:
+            ctx.AddExecutionMode(main, spv::ExecutionMode::OutputVertices, 1024);
+            break;
+        case AmdGpu::Liverpool::GsCutMode::GsCut512:
+            ctx.AddExecutionMode(main, spv::ExecutionMode::OutputVertices, 512);
+            break;
+        case AmdGpu::Liverpool::GsCutMode::GsCut256:
+            ctx.AddExecutionMode(main, spv::ExecutionMode::OutputVertices, 256);
+            break;
+        case AmdGpu::Liverpool::GsCutMode::GsCut128:
+            ctx.AddExecutionMode(main, spv::ExecutionMode::OutputVertices, 128);
+            break;
+        default:
+            UNREACHABLE_MSG("Unexpected GS cut mode");
         }
         break;
     default:
@@ -251,7 +290,7 @@ std::vector<u32> EmitSPIRV(const Profile& profile, IR::Program& program, u32& bi
     EmitContext ctx{profile, program, binding};
     const Id main{DefineMain(ctx, program)};
     DefineEntryPoint(program, ctx, main);
-    if (program.info.stage == Stage::Vertex) {
+    if (program.info.stage == Stage::Vertex || program.info.stage == Stage::Export) {
         ctx.AddExtension("SPV_KHR_shader_draw_parameters");
         ctx.AddCapability(spv::Capability::DrawParameters);
     }

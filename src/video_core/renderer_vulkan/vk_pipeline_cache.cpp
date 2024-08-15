@@ -8,6 +8,7 @@
 #include "shader_recompiler/exception.h"
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
+#include "shader_recompiler/ir/program.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
@@ -19,6 +20,8 @@ extern std::unique_ptr<Vulkan::RendererVulkan> renderer;
 namespace Vulkan {
 
 using Shader::VsOutput;
+
+bool has_geometry_shader = false;
 
 void BuildVsOutputs(Shader::Info& info, const AmdGpu::Liverpool::VsOutputControl& ctl) {
     const auto add_output = [&](VsOutput x, VsOutput y, VsOutput z, VsOutput w) {
@@ -73,6 +76,11 @@ Shader::Info MakeShaderInfo(Shader::Stage stage, std::span<const u32, 16> user_d
     case Shader::Stage::Vertex: {
         info.num_user_data = regs.vs_program.settings.num_user_regs;
         info.num_input_vgprs = regs.vs_program.settings.vgpr_comp_cnt;
+
+        if (has_geometry_shader) {
+            info.is_copy_shader = true;
+        }
+
         BuildVsOutputs(info, regs.vs_output_control);
         break;
     }
@@ -94,6 +102,25 @@ Shader::Info MakeShaderInfo(Shader::Stage stage, std::span<const u32, 16> user_d
         info.workgroup_size = {cs_pgm.num_thread_x.full, cs_pgm.num_thread_y.full,
                                cs_pgm.num_thread_z.full};
         info.shared_memory_size = cs_pgm.SharedMemSize();
+        break;
+    }
+    case Shader::Stage::Export: {
+        info.num_user_data = regs.es_program.settings.num_user_regs;
+        info.num_input_vgprs = regs.es_program.settings.vgpr_comp_cnt;
+        break;
+    }
+    case Shader::Stage::Geometry: {
+        info.num_user_data = regs.gs_program.settings.num_user_regs;
+        info.gs_cut_mode = regs.gs_mode.cut_mode;
+
+        if (!regs.gs_out_prim_type.unique_type_per_stream) {
+            info.gs_out_prim_type = regs.gs_out_prim_type.outprim_type;
+        }  
+        else {
+            UNREACHABLE_MSG("Streamout is unsupported");
+        }
+
+
         break;
     }
     default:
@@ -216,6 +243,12 @@ void PipelineCache::RefreshGraphicsKey() {
             key.stage_hashes[i] = 0;
             continue;
         }
+
+        const auto stage = Shader::Stage{i};
+        if (stage == Shader::Stage::Geometry) {
+            has_geometry_shader = true;
+        }
+
         const auto* bininfo = Liverpool::GetBinaryInfo(*pgm);
         if (!bininfo->Valid()) {
             key.stage_hashes[i] = 0;
@@ -243,7 +276,9 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
 
     u32 binding{};
     std::array<Shader::IR::Program, MaxShaderStages> programs;
-    std::array<const Shader::Info*, MaxShaderStages> infos{};
+    std::array<Shader::Info*, MaxShaderStages> infos{};
+
+    Shader::IR::Program gs_copy_program{};
 
     for (u32 i = 0; i < MaxShaderStages; i++) {
         if (!graphics_key.stage_hashes[i]) {
@@ -269,10 +304,19 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
         block_pool.ReleaseContents();
         inst_pool.ReleaseContents();
 
-        if (stage != Shader::Stage::Compute && stage != Shader::Stage::Fragment &&
-            stage != Shader::Stage::Vertex) {
+        if (stage != Shader::Stage::Compute  &&
+            stage != Shader::Stage::Fragment && stage != Shader::Stage::Vertex &&
+            stage != Shader::Stage::Export   && stage != Shader::Stage::Geometry) {
             LOG_ERROR(Render_Vulkan, "Unsupported shader stage {}. PL creation skipped.", stage);
             return {};
+        }
+
+        if (has_geometry_shader && stage == Shader::Stage::Vertex) {
+            LOG_WARNING(Render_Vulkan, "GS copy shader detected");
+        }
+
+        if (stage == Shader::Stage::Export || stage == Shader::Stage::Geometry) {
+            LOG_ERROR(Render_Vulkan, "Nasty stage ahead: {}", stage);
         }
 
         // Recompile shader to IR.
@@ -281,8 +325,17 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
             Shader::Info info = MakeShaderInfo(stage, pgm->user_data, regs);
             info.pgm_base = pgm->Address<uintptr_t>();
             info.pgm_hash = hash;
+
+            if (stage == Shader::Stage::Geometry) {
+                info.gs_copy_shader = &gs_copy_program;
+            }
+
             programs[i] =
                 Shader::TranslateProgram(inst_pool, block_pool, code, std::move(info), profile);
+
+            if (has_geometry_shader && stage == Shader::Stage::Vertex) {
+                gs_copy_program = programs[i];
+            }
 
             // Compile IR to SPIR-V
             auto spv_code = Shader::Backend::SPIRV::EmitSPIRV(profile, programs[i], binding);

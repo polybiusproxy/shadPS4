@@ -27,12 +27,12 @@ void EmitDiscardCond(EmitContext& ctx, Id condition) {
     ctx.AddLabel(merge_label);
 }
 
-void EmitEmitVertex(EmitContext& ctx, const IR::Value& stream) {
-    throw NotImplementedException("Geometry streams");
+void EmitEmitVertex(EmitContext& ctx) {
+    ctx.OpEmitVertex();
 }
 
-void EmitEndPrimitive(EmitContext& ctx, const IR::Value& stream) {
-    throw NotImplementedException("Geometry streams");
+void EmitEndPrimitive(EmitContext& ctx) {
+    ctx.OpEndPrimitive();
 }
 
 } // namespace Shader::Backend::SPIRV

@@ -112,6 +112,14 @@ void IREmitter::Discard(const U1& cond) {
     Inst(Opcode::DiscardCond, cond);
 }
 
+void IREmitter::EmitVertex() {
+    Inst(Opcode::EmitVertex);
+}
+
+void IREmitter::EndPrimitive() {
+    Inst(Opcode::EndPrimitive);
+}
+
 void IREmitter::Barrier() {
     Inst(Opcode::Barrier);
 }

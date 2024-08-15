@@ -56,6 +56,7 @@ IR::Program TranslateProgram(Common::ObjectPool<IR::Inst>& inst_pool,
 
     // Run optimization passes
     Shader::Optimization::SsaRewritePass(program.post_order_blocks);
+    // Shader::Optimization::MergeCopyShaderPass(program);
     Shader::Optimization::ResourceTrackingPass(program);
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     if (program.info.stage != Stage::Compute) {

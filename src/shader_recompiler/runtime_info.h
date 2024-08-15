@@ -11,8 +11,13 @@
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/type.h"
 #include "video_core/amdgpu/resource.h"
+#include "video_core/amdgpu/liverpool.h"
 
 namespace Shader {
+
+namespace IR {
+struct Program;
+} // namespace IR
 
 static constexpr size_t NumUserDataRegs = 16;
 
@@ -189,6 +194,13 @@ struct Info {
     uintptr_t pgm_base{};
     u64 pgm_hash{};
     u32 shared_memory_size{};
+
+    AmdGpu::Liverpool::GsPrimType gs_out_prim_type;
+    AmdGpu::Liverpool::GsCutMode gs_cut_mode;
+
+    IR::Program* gs_copy_shader;
+
+    bool is_copy_shader{};
     bool has_storage_images{};
     bool has_discard{};
     bool has_image_gather{};

@@ -196,6 +196,7 @@ Id MakeDefaultValue(EmitContext& ctx, u32 default_value) {
 
 void EmitContext::DefineInputs() {
     switch (stage) {
+    case Stage::Export:
     case Stage::Vertex: {
         vertex_index = DefineVariable(U32[1], spv::BuiltIn::VertexIndex, spv::StorageClass::Input);
         base_vertex = DefineVariable(U32[1], spv::BuiltIn::BaseVertex, spv::StorageClass::Input);
@@ -259,6 +260,22 @@ void EmitContext::DefineInputs() {
         local_invocation_id =
             DefineVariable(U32[3], spv::BuiltIn::LocalInvocationId, spv::StorageClass::Input);
         break;
+    case Stage::Geometry: {
+        input_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Input);
+        point_size = DefineVariable(F32[1], spv::BuiltIn::PointSize, spv::StorageClass::Input);
+
+        const std::array<Id, 8> zero{f32_zero_value, f32_zero_value, f32_zero_value,
+                                     f32_zero_value, f32_zero_value, f32_zero_value,
+                                     f32_zero_value, f32_zero_value};
+        const Id type{TypeArray(F32[1], ConstU32(8U))};
+        const Id initializer{ConstantComposite(type, zero)};
+
+        clip_distances =
+            DefineVariable(type, spv::BuiltIn::ClipDistance, spv::StorageClass::Input, initializer);
+
+        primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
+        break;
+    }
     default:
         break;
     }
@@ -266,6 +283,7 @@ void EmitContext::DefineInputs() {
 
 void EmitContext::DefineOutputs() {
     switch (stage) {
+    case Stage::Export:
     case Stage::Vertex: {
         output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
         const bool has_extra_pos_stores = info.stores.Get(IR::Attribute::Position1) ||
@@ -304,6 +322,20 @@ void EmitContext::DefineOutputs() {
             interfaces.push_back(frag_color[i]);
         }
         break;
+    case Stage::Geometry: {
+        output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
+        point_size = DefineVariable(F32[1], spv::BuiltIn::PointSize, spv::StorageClass::Output);
+
+        const std::array<Id, 8> zero{f32_zero_value, f32_zero_value, f32_zero_value,
+                                     f32_zero_value, f32_zero_value, f32_zero_value,
+                                     f32_zero_value, f32_zero_value};
+        const Id type{TypeArray(F32[1], ConstU32(8U))};
+        const Id initializer{ConstantComposite(type, zero)};
+
+        clip_distances = DefineVariable(type, spv::BuiltIn::ClipDistance, spv::StorageClass::Output,
+                                        initializer);
+        break;
+    }
     default:
         break;
     }

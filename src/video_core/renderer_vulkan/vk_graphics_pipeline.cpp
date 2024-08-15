@@ -19,7 +19,7 @@ namespace Vulkan {
 GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& scheduler_,
                                    const GraphicsPipelineKey& key_,
                                    vk::PipelineCache pipeline_cache,
-                                   std::span<const Shader::Info*, MaxShaderStages> infos,
+                                   std::span<Shader::Info*, MaxShaderStages> infos,
                                    std::array<vk::ShaderModule, MaxShaderStages> modules)
     : instance{instance_}, scheduler{scheduler_}, key{key_} {
     const vk::Device device = instance.GetDevice();
@@ -185,11 +185,33 @@ GraphicsPipeline::GraphicsPipeline(const Instance& instance_, Scheduler& schedul
     u32 shader_count{};
     auto stage = u32(Shader::Stage::Vertex);
     std::array<vk::PipelineShaderStageCreateInfo, MaxShaderStages> shader_stages;
+
+    // If there's a geometry shader in the pipeline,
+    // the Export stage acts as the vertex shader,
+    // whereas the Vertex stage acts as a 'copy' from the
+    // geometry shader.
+    if (modules[u32(Shader::Stage::Geometry)])
+        stage = u32(Shader::Stage::Export);
+    else
+        stage = u32(Shader::Stage::Vertex);
+
     shader_stages[shader_count++] = vk::PipelineShaderStageCreateInfo{
         .stage = vk::ShaderStageFlagBits::eVertex,
         .module = modules[stage],
         .pName = "main",
     };
+
+#if 0
+    stage = u32(Shader::Stage::Geometry);
+    if (modules[stage]) {
+        shader_stages[shader_count++] = vk::PipelineShaderStageCreateInfo{
+            .stage = vk::ShaderStageFlagBits::eGeometry,
+            .module = modules[stage],
+            .pName = "main",
+        };  
+    }
+#endif
+
     stage = u32(Shader::Stage::Fragment);
     if (modules[stage]) {
         shader_stages[shader_count++] = vk::PipelineShaderStageCreateInfo{

@@ -47,6 +47,8 @@ void EmitPrologue(EmitContext& ctx);
 void EmitEpilogue(EmitContext& ctx);
 void EmitDiscard(EmitContext& ctx);
 void EmitDiscardCond(EmitContext& ctx, Id condition);
+void EmitEmitVertex(EmitContext& ctx);
+void EmitEndPrimitive(EmitContext& ctx);
 void EmitBarrier(EmitContext& ctx);
 void EmitWorkgroupMemoryBarrier(EmitContext& ctx);
 void EmitDeviceMemoryBarrier(EmitContext& ctx);

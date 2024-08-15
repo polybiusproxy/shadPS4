@@ -208,6 +208,8 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
     case IR::Attribute::IsFrontFace:
         return ctx.OpSelect(ctx.U32[1], ctx.OpLoad(ctx.U1[1], ctx.front_facing), ctx.u32_one_value,
                             ctx.u32_zero_value);
+    case IR::Attribute::PrimitiveId:
+        return ctx.OpLoad(ctx.U32[1], ctx.primitive_id);
     default:
         throw NotImplementedException("Read U32 attribute {}", attr);
     }
