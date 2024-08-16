@@ -96,6 +96,15 @@ if(HAVE_SEM_TIMEDWAIT OR WIN32)
     add_compile_options(-DHAVE_SEM_TIMEDWAIT)
 endif()
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    # libc++ requires -fexperimental-library to enable std::jthread and std::stop_token support.
+    include(CheckCXXSymbolExists)
+    check_cxx_symbol_exists(_LIBCPP_VERSION version LIBCPP)
+    if(LIBCPP)
+        add_compile_options(-fexperimental-library)
+    endif()
+endif()
+
 add_subdirectory(externals)
 include_directories(src)
 
@@ -184,6 +193,16 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/disc_map/disc_map.cpp
                 src/core/libraries/disc_map/disc_map.h
                 src/core/libraries/disc_map/disc_map_codes.h
+                src/core/libraries/avplayer/avplayer_common.cpp
+                src/core/libraries/avplayer/avplayer_common.h
+                src/core/libraries/avplayer/avplayer_file_streamer.cpp
+                src/core/libraries/avplayer/avplayer_file_streamer.h
+                src/core/libraries/avplayer/avplayer_impl.cpp
+                src/core/libraries/avplayer/avplayer_impl.h
+                src/core/libraries/avplayer/avplayer_source.cpp
+                src/core/libraries/avplayer/avplayer_source.h
+                src/core/libraries/avplayer/avplayer_state.cpp
+                src/core/libraries/avplayer/avplayer_state.h
                 src/core/libraries/avplayer/avplayer.cpp
                 src/core/libraries/avplayer/avplayer.h
 )
@@ -589,7 +608,7 @@ endif()
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API ffmpeg)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3)
 
 if (APPLE)
