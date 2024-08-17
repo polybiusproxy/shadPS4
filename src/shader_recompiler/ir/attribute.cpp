@@ -110,6 +110,8 @@ std::string NameOf(Attribute attribute) {
         return "Param31";
     case Attribute::VertexId:
         return "VertexId";
+    case Attribute::PrimitiveId:
+        return "PrimitiveId";
     case Attribute::InstanceId:
         return "InstanceId";
     case Attribute::FragCoord:
