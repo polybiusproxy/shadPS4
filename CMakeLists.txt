@@ -67,11 +67,13 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_
 
 find_package(Boost 1.84.0 CONFIG)
 find_package(cryptopp 8.9.0 MODULE)
+find_package(FFmpeg 5.1.2 MODULE)
 find_package(fmt 10.2.1 CONFIG)
 find_package(glslang 14.2.0 CONFIG)
 find_package(magic_enum 0.9.6 CONFIG)
+find_package(RenderDoc 1.6.0 MODULE)
 find_package(SDL3 3.1.2 CONFIG)
-find_package(toml11 3.8.1 CONFIG)
+find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
 find_package(VulkanHeaders 1.3.289 CONFIG)
 find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
@@ -79,7 +81,6 @@ find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
 find_package(zlib-ng 2.2.0 MODULE)
 find_package(Zydis 4.1.0 CONFIG)
-find_package(RenderDoc MODULE)
 
 if (APPLE)
     find_package(date 3.0.1 CONFIG)
@@ -547,7 +548,10 @@ set(EMULATOR src/emulator.cpp
 if(ENABLE_QT_GUI)
 qt_add_resources(RESOURCE_FILES src/shadps4.qrc)
 
-set(QT_GUI src/qt_gui/main_window_ui.h
+set(QT_GUI src/qt_gui/about_dialog.cpp
+           src/qt_gui/about_dialog.h
+           src/qt_gui/about_dialog.ui
+           src/qt_gui/main_window_ui.h
            src/qt_gui/main_window.cpp
            src/qt_gui/main_window.h
            src/qt_gui/gui_context_menus.h
@@ -608,7 +612,7 @@ endif()
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API ffmpeg)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::SPIRV glslang::glslang SDL3::SDL3)
 
 if (APPLE)
