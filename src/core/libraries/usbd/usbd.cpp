@@ -216,7 +216,7 @@ int PS4_SYSV_ABI sceUsbdHandleEventsLocked() {
 
 int PS4_SYSV_ABI sceUsbdHandleEventsTimeout() {
     LOG_ERROR(Lib_Usbd, "(STUBBED)called");
-    return ORBIS_OK;
+    return 0x80240004;
 }
 
 int PS4_SYSV_ABI sceUsbdInit() {
