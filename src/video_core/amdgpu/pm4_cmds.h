@@ -400,6 +400,15 @@ struct PM4DmaData {
     u32 command;
 };
 
+struct PM4Rewind {
+    PM4Type3Header header;
+    union {
+        BitField<24, 1, u32> offload_enable;
+        BitField<31, 1, u32> valid;
+        u32 raw;
+    };
+};
+
 struct PM4CmdWaitRegMem {
     enum class Engine : u32 { Me = 0u, Pfp = 1u };
     enum class MemSpace : u32 { Register = 0u, Memory = 1u };

@@ -645,6 +645,23 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, int vqid) {
             release_mem->SignalFence(Platform::InterruptId::Compute0RelMem); // <---
             break;
         }
+        case PM4ItOpcode::DmaData: {
+            const auto* dma_data = reinterpret_cast<const PM4DmaData*>(header);
+            if (dma_data->src_sel == DmaDataSrc::Data && dma_data->dst_sel == DmaDataDst::Gds) {
+                if (rasterizer) {
+                    rasterizer->InlineDataToGds(dma_data->dst_addr_lo, dma_data->data);
+                }
+            }
+            break;
+        }
+        case PM4ItOpcode::Rewind: {
+            const auto* rewind = reinterpret_cast<const PM4Rewind*>(header);
+            const u32 raw = rewind->raw;
+            if (rasterizer) {
+                rasterizer->CpSync();
+            }
+            break;
+        }
         default:
             UNREACHABLE_MSG("Unknown PM4 type 3 opcode {:#x} with count {}",
                             static_cast<u32>(opcode), count);
